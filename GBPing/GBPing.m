@@ -207,7 +207,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
             success = CFHostStartInfoResolution(hostRef, kCFHostAddresses, &streamError);
         } else {
             success = NO;
-        }        
+        }
         
         if (!success) {
             //construct an error
@@ -232,10 +232,10 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
             dispatch_async(dispatch_get_main_queue(), ^{
                 callback(NO, error);
             });
-          
+
             //just incase
             if (hostRef) {
-              CFRelease(hostRef);
+                CFRelease(hostRef);
             }
             return;
         }
@@ -366,7 +366,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
     enum { kBufferSize = 65535 };
     
     buffer = malloc(kBufferSize);
-    assert(buffer);
+    if (buffer == nil) { return; }
     
     //read the data.
     addrLen = sizeof(addr);
@@ -388,7 +388,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
             NSMutableData *packet;
 
             packet = [NSMutableData dataWithBytes:buffer length:(NSUInteger) bytesRead];
-            assert(packet);
+            if (packet == nil) { return; }
 
             //complete the ping summary
             const struct ICMPHeader *headerPointer;
@@ -467,13 +467,13 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
     @autoreleasepool {
         while (self.isPinging) {
             [self sendPing];
-          
+
             NSTimeInterval runUntil = CFAbsoluteTimeGetCurrent() + self.pingPeriod;
             NSTimeInterval time = 0;
             while (runUntil > time) {
                 NSDate *runUntilDate = [NSDate dateWithTimeIntervalSinceReferenceDate:runUntil];
                 [[NSRunLoop currentRunLoop] runUntilDate:runUntilDate];
-        
+
                 time = CFAbsoluteTimeGetCurrent();
             }
         }
@@ -482,7 +482,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
 
 -(void)sendPing {
     if (self.isPinging) {
-      
+
         int err;
         NSData *packet;
         ssize_t bytesSent;
@@ -498,7 +498,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
                 packet = [self pingPacketWithType:kICMPv6TypeEchoRequest payload:payload requiresChecksum:NO];
             } break;
             default: {
-                assert(NO);
+                return;
             } break;
         }
         
@@ -544,19 +544,19 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
             NSTimer *timeoutTimer = [NSTimer scheduledTimerWithTimeInterval:self.timeout
                                                                      target:[NSBlockOperation blockOperationWithBlock:^{
 
-                                                                         newPingSummary.status = GBPingStatusFail;
+                newPingSummary.status = GBPingStatusFail;
 
-                                                                         //notify about the failure
-                                                                         if (self.delegate && [self.delegate respondsToSelector:@selector(ping:didTimeoutWithSummary:)]) {
-                                                                             dispatch_async(dispatch_get_main_queue(), ^{
-                                                                                 [self.delegate ping:self didTimeoutWithSummary:pingSummaryCopy];
-                                                                             });
-                                                                         }
+                //notify about the failure
+                if (self.delegate && [self.delegate respondsToSelector:@selector(ping:didTimeoutWithSummary:)]) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self.delegate ping:self didTimeoutWithSummary:pingSummaryCopy];
+                    });
+                }
 
-                                                                         //remove the timer itself from the timers list
-                                                                         //lm make sure that the timer list doesnt grow and these removals actually work... try logging the count of the timeoutTimers when stopping the pinger
-                                                                         [self.timeoutTimers removeObjectForKey:key];
-                                                                     }]
+                //remove the timer itself from the timers list
+                //lm make sure that the timer list doesnt grow and these removals actually work... try logging the count of the timeoutTimers when stopping the pinger
+                [self.timeoutTimers removeObjectForKey:key];
+            }]
                                                                    selector:@selector(main)
                                                                    userInfo:nil
                                                                     repeats:NO];
@@ -694,8 +694,8 @@ static uint16_t in_cksum(const void *buffer, size_t bufferLen)
     }
     
     /* add back carry outs from top 16 bits to low 16 bits */
-    sum = (sum >> 16) + (sum & 0xffff);	/* add hi 16 to low 16 */
-    sum += (sum >> 16);			/* add carry */
+    sum = (sum >> 16) + (sum & 0xffff);    /* add hi 16 to low 16 */
+    sum += (sum >> 16);            /* add carry */
     answer = (uint16_t) ~sum;   /* truncate to 16 bits */
     
     return answer;
@@ -764,7 +764,6 @@ static uint16_t in_cksum(const void *buffer, size_t bufferLen)
             result = [self isValidPing6ResponsePacket:packet];
         } break;
         default: {
-            assert(NO);
             result = NO;
         } break;
     }
@@ -827,7 +826,6 @@ static uint16_t in_cksum(const void *buffer, size_t bufferLen)
                 }
             }
         }
-
     }
     
     return result;
@@ -854,7 +852,7 @@ static uint16_t in_cksum(const void *buffer, size_t bufferLen)
     ICMPHeader *            icmpPtr;
     
     packet = [NSMutableData dataWithLength:sizeof(*icmpPtr) + payload.length];
-    assert(packet != nil);
+    if (packet == nil) { return packet; }
     
     icmpPtr = packet.mutableBytes;
     icmpPtr->type = type;
