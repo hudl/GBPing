@@ -366,7 +366,10 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
     enum { kBufferSize = 65535 };
     
     buffer = malloc(kBufferSize);
-    if (buffer == nil) { return; }
+    if (buffer == nil) {
+        err = errno;
+        return;
+    }
     
     //read the data.
     addrLen = sizeof(addr);
@@ -388,8 +391,11 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
             NSMutableData *packet;
 
             packet = [NSMutableData dataWithBytes:buffer length:(NSUInteger) bytesRead];
-            if (packet == nil) { return; }
-
+            if (packet == nil) {
+                err = errno;
+                return;
+            }
+            
             //complete the ping summary
             const struct ICMPHeader *headerPointer;
             
@@ -498,6 +504,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
                 packet = [self pingPacketWithType:kICMPv6TypeEchoRequest payload:payload requiresChecksum:NO];
             } break;
             default: {
+                err = errno;
                 return;
             } break;
         }
@@ -909,3 +916,4 @@ static uint16_t in_cksum(const void *buffer, size_t bufferLen)
 }
 
 @end
+
